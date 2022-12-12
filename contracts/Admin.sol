@@ -10,7 +10,6 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
 error Admin__UserAlreadyExists();
-// error Admin__UserNotFound();
 error Admin__NotAuthorized();
 
 contract Admin is ERC721URIStorage {
@@ -18,14 +17,10 @@ contract Admin is ERC721URIStorage {
 
     //state variables
 
-    address private immutable i_owner;
-
     mapping(address => uint256) private s_addressToEntryToken;
-
+    address private immutable i_owner;
     uint256 private s_entryTokenCounter = 0;
-
-    string private constant INITIAL_TOKEN_URI =
-        "https://ipfs.io/ipfs/QmZ7qzYAQh342RfvX2FbU68HoxjSvUGtC3mw1ucM4FwY6P?filename=testEntryURI.json"; //reputation = 0 ; properties owned = 0 ; dealtokens = 0 ; warnings = 0;
+    string private i_initialTokenURI;
 
     //events
 
@@ -37,9 +32,10 @@ contract Admin is ERC721URIStorage {
 
     //constructor
 
-    constructor() ERC721("EntryToken", "ETN") {
+    constructor(string memory _initialTokenURI) ERC721("EntryToken", "ETN") {
         //access property, dealtoken status
         i_owner = msg.sender;
+        i_initialTokenURI = _initialTokenURI;
     }
 
     //external
@@ -50,10 +46,9 @@ contract Admin is ERC721URIStorage {
         s_entryTokenCounter += 1;
         s_addressToEntryToken[msg.sender] = s_entryTokenCounter;
         _safeMint(msg.sender, s_entryTokenCounter);
-        _setTokenURI(s_entryTokenCounter, INITIAL_TOKEN_URI);
+        _setTokenURI(s_entryTokenCounter, i_initialTokenURI);
     }
 
-    //onlyowner
     function updateTokenURI(
         string memory _newTokenURI,
         uint256 _entryTokenId
