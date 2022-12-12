@@ -9,11 +9,11 @@ pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
-error Test__UserAlreadyExists();
-// error Test__UserNotFound();
-error Test__NotAuthorized();
+error Admin__UserAlreadyExists();
+// error Admin__UserNotFound();
+error Admin__NotAuthorized();
 
-contract Test is ERC721URIStorage {
+contract Admin is ERC721URIStorage {
     //type declarations
 
     //state variables
@@ -59,7 +59,7 @@ contract Test is ERC721URIStorage {
         uint256 _entryTokenId
     ) public {
         if (msg.sender != i_owner) {
-            revert Test__NotAuthorized();
+            revert Admin__NotAuthorized();
         }
         _setTokenURI(_entryTokenId, _newTokenURI);
     }
@@ -70,7 +70,7 @@ contract Test is ERC721URIStorage {
 
     function _notRegistered() private view {
         if (s_addressToEntryToken[msg.sender] != 0) {
-            revert Test__UserAlreadyExists();
+            revert Admin__UserAlreadyExists();
         }
     }
 
