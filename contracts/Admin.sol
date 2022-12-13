@@ -41,7 +41,7 @@ contract Admin is ERC721URIStorage {
     //external
 
     //public
-
+    //isowner
     function registerUser() public notRegistered {
         s_entryTokenCounter += 1;
         s_addressToEntryToken[msg.sender] = s_entryTokenCounter;
