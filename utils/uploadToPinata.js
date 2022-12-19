@@ -1,6 +1,7 @@
 const pinataSDK = require("@pinata/sdk")
 const fs = require("fs")
 const path = require("path")
+const imageToBase64 = require("image-to-base64")
 
 const pinataApiKey = process.env.PINATA_API_KEY || ""
 const pinataApiSecret = process.env.PINATA_API_SECRET || ""
@@ -53,4 +54,18 @@ async function storeTokenUriMetadata(metadata) {
     return null
 }
 
-module.exports = { storeImages, storeTokenUriMetadata }
+async function convertImgToBase64() {
+    const imagesFilePath = "images/entryToken/Entry Token.png"
+    let returnVal
+    await imageToBase64(imagesFilePath) // Path to the image
+        .then((response) => {
+            returnVal = response
+            // console.log(response)
+        })
+        .catch((error) => {
+            console.log(error) // Logs an error if there was one
+        })
+    return returnVal
+}
+
+module.exports = { storeImages, storeTokenUriMetadata, convertImgToBase64 }

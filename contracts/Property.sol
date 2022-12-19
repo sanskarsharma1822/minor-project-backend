@@ -1,13 +1,5 @@
 //SPDX-License-Identifier: MIT
 
-//with new modifiers : 25552
-//with give warning  : 29212
-
-//Deployer - 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4
-//Landlord - 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2
-//Tenant - 0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db
-//Not Authorized - 0x78731D3Ca6b7E34aC0F824c42a7cC18A495cabaB
-
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
@@ -22,6 +14,7 @@ error Property__NoRentAvailableToWithdraw();
 error Property__TransactionFailed();
 error Property__NotAuthorized();
 error Property__OnRent();
+error Property__TransferNotAllowed();
 
 contract Property is ERC721URIStorage {
     //type declarations
@@ -84,10 +77,12 @@ contract Property is ERC721URIStorage {
     //make all transfers and approves null
     // retrieve and fallback
 
+    // should contain amount paid by dates with status
+    //is verified by owner correct
+
     function addTenant(
         string memory _newTokenURI
     ) public payable notOnRent returns (bool) {
-        //is verified by owner correct
         if (!s_verifiedByLandlord) {
             revert Property__NotVerifiedByLandlord();
         }
@@ -100,7 +95,7 @@ contract Property is ERC721URIStorage {
         s_listOfTenants.push(msg.sender);
         s_currentTenant = msg.sender;
         _safeMint(msg.sender, s_dealTokenCounter);
-        _setTokenURI(s_dealTokenCounter, _newTokenURI); // should contain amount paid by dates with status
+        _setTokenURI(s_dealTokenCounter, _newTokenURI);
         return true;
     }
 
@@ -146,6 +141,31 @@ contract Property is ERC721URIStorage {
         string memory _newPropertyData
     ) public onlyCurrentTenant {
         s_propertyData = _newPropertyData;
+    }
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public pure override {
+        revert Property__TransferNotAllowed();
+    }
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public pure override {
+        revert Property__TransferNotAllowed();
+    }
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes calldata data
+    ) public pure override {
+        revert Property__TransferNotAllowed();
     }
 
     function verifiedByLandlord() public onlyLandlord {
@@ -231,3 +251,11 @@ contract PropertyFactory {
         return s_totalProperties.length;
     }
 }
+
+//with new modifiers : 25552
+//with give warning  : 29212
+
+//Deployer - 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4
+//Landlord - 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2
+//Tenant - 0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db
+//Not Authorized - 0x78731D3Ca6b7E34aC0F824c42a7cC18A495cabaB

@@ -22,6 +22,7 @@
     "@openzeppelin/contracts": "^4.8.0",
     "@pinata/sdk": "^2.1.0",
     "dotenv": "^16.0.3",
+    "image-to-base64": "^2.2.0",
     "path": "^0.12.7"
   }
 }

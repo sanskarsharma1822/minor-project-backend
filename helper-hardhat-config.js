@@ -1,30 +1,37 @@
 const networkConfig = {
     default: {
         name: "hardhat",
-        keepersUpdateInterval: "86400",
     },
     31337: {
         name: "localhost",
-        keepersUpdateInterval: "86400",
     },
     4: {
         name: "rinkeby",
-        keepersUpdateInterval: "60",
     },
     80001: {
         name: "polygon",
-        keepersUpdateInterval: "60",
+    },
+    5: {
+        name: "goerli",
     },
 }
 
-const INITIAL_ENTRY_TOKEN_URI =
-    "https://ipfs.io/ipfs/QmZ7qzYAQh342RfvX2FbU68HoxjSvUGtC3mw1ucM4FwY6P?filename=testEntryURI.json" //reputation = 0 ; properties owned = 0 ; dealtokens = 0 ; warnings = 0;
+// const INITIAL_ENTRY_TOKEN_URI =
+//      //reputation = 0 ; properties owned = 0 ; dealtokens = 0 ; warnings = 0;
+
 const developmentChains = ["hardhat", "localhost"]
+
+const sampleProperty = {
+    propertyData:
+        "https://ipfs.io/ipfs/QmZ7qzYAQh342RfvX2FbU68HoxjSvUGtC3mw1ucM4FwY6P?filename=testEntryURI.json",
+    propertyRent: 25,
+    propertySecurity: 50,
+}
 
 module.exports = {
     networkConfig,
     developmentChains,
-    INITIAL_ENTRY_TOKEN_URI,
+    sampleProperty,
 }
 
 //Property - 3286636

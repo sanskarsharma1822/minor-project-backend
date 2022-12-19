@@ -2,6 +2,10 @@ require("@nomicfoundation/hardhat-toolbox")
 require("hardhat-deploy")
 require("dotenv").config()
 
+const GOERLI_RPC_URL = process.env.GOERLI_RPC_URL
+const POLYGON_RPC_URL = process.env.POLYGON_RPC_URL
+const PRIVATE_KEY = process.env.PRIVATE_KEY
+
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
     solidity: {
@@ -12,40 +16,19 @@ module.exports = {
         ],
     },
     networks: {
-        // hardhat: {
-        //     hardfork: "merge",
-        //     // If you want to do some forking set `enabled` to true
-        //     forking: {
-        //         url: MAINNET_RPC_URL,
-        //         blockNumber: FORKING_BLOCK_NUMBER,
-        //         enabled: false,
-        //     },
-        //     chainId: 31337,
-        // },
         localhost: {
             chainId: 31337,
         },
-        // goerli: {
-        //     url: GOERLI_RPC_URL,
-        //     accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],
-        //     //   accounts: {
-        //     //     mnemonic: MNEMONIC,
-        //     //   },
-        //     chainId: 5,
-        // },
-        // mainnet: {
-        //     url: MAINNET_RPC_URL,
-        //     accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],
-        //     //   accounts: {
-        //     //     mnemonic: MNEMONIC,
-        //     //   },
-        //     chainId: 1,
-        // },
-        // polygon: {
-        //     url: POLYGON_MAINNET_RPC_URL,
-        //     accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],
-        //     chainId: 137,
-        // },
+        goerli: {
+            url: GOERLI_RPC_URL,
+            accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],
+            chainId: 5,
+        },
+        polygon: {
+            url: POLYGON_RPC_URL,
+            accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],
+            chainId: 80001,
+        },
     },
     defaultNetwork: "hardhat",
     namedAccounts: {

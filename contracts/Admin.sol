@@ -1,16 +1,12 @@
 //SPDX-License-Identifier: MIT
 
-//with property 24376;
-//without erc721uristorage 24376;
-//with property 51806;
-//23802
-
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
 error Admin__UserAlreadyExists();
 error Admin__NotAuthorized();
+error Admin__TransferNotAllowed();
 
 contract Admin is ERC721URIStorage {
     //type declarations
@@ -59,6 +55,31 @@ contract Admin is ERC721URIStorage {
         _setTokenURI(_entryTokenId, _newTokenURI);
     }
 
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public pure override {
+        revert Admin__TransferNotAllowed();
+    }
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public pure override {
+        revert Admin__TransferNotAllowed();
+    }
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes calldata data
+    ) public pure override {
+        revert Admin__TransferNotAllowed();
+    }
+
     //internal
 
     //private
@@ -75,3 +96,8 @@ contract Admin is ERC721URIStorage {
         return s_addressToEntryToken[_userAddress];
     }
 }
+
+//with property 24376;
+//without erc721uristorage 24376;
+//with property 51806;
+//23802

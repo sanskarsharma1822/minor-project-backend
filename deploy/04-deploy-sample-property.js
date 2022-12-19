@@ -1,5 +1,5 @@
 const { getNamedAccounts, deployments, network, run, ethers } = require("hardhat")
-const { networkConfig, developmentChains } = require("../helper-hardhat-config")
+const { networkConfig, developmentChains, sampleProperty } = require("../helper-hardhat-config")
 // const { verify } = require("../utils/verify")
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
@@ -7,10 +7,17 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deployer } = await getNamedAccounts()
     const chainId = network.config.chainId
 
-    console.log("Deploying Property Factory Contract")
-    const propertyFactory = await deploy("PropertyFactory", {
+    const arguments = [
+        sampleProperty["propertyData"],
+        sampleProperty["propertyRent"],
+        sampleProperty["propertySecurity"],
+        deployer,
+    ]
+
+    console.log("Deploying Sample Property Contract")
+    const propertyFactory = await deploy("Property", {
         from: deployer,
-        args: [],
+        args: arguments,
         log: true,
     })
     console.log("----------------------------------------------------")
@@ -22,4 +29,4 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 //     await verify(admin.address, arguments)
 // }
 
-module.exports.tags = ["all", "propertyFactory"]
+module.exports.tags = ["all", "property"]

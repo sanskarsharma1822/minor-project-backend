@@ -1,11 +1,12 @@
 const { getNamedAccounts, deployments, network, run, ethers } = require("hardhat")
-const {
-    networkConfig,
-    developmentChains,
-    INITIAL_ENTRY_TOKEN_URI,
-} = require("../helper-hardhat-config")
+const { networkConfig, developmentChains } = require("../helper-hardhat-config")
+const imageToBase64 = require("image-to-base64")
 
-const { storeImages, storeTokenUriMetadata } = require("../utils/uploadToPinata")
+const {
+    storeImages,
+    storeTokenUriMetadata,
+    convertImgToBase64,
+} = require("../utils/uploadToPinata")
 const imagesLocation = "./images/entryToken/"
 // const { verify } = require("../utils/verify")
 
@@ -18,10 +19,12 @@ const metadataTemplate = {
             reputation: 100,
             dealTokens: [],
             propertiesOwned: [],
-            currentlyOnRent: false,
+            currentlyTenant: false,
         },
     ],
 }
+
+// array of property addresses owned
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deploy, log } = deployments
@@ -54,13 +57,14 @@ async function handleTokenUris() {
     for (imageUploadResponseIndex in imageUploadResponses) {
         let tokenUriMetadata = { ...metadataTemplate }
         tokenUriMetadata.name = files[imageUploadResponseIndex].replace(".png", "")
-        tokenUriMetadata.description = `An adorable ${tokenUriMetadata.name} pup!`
-        tokenUriMetadata.image = `ipfs://${imageUploadResponses[imageUploadResponseIndex].IpfsHash}`
+        tokenUriMetadata.description =
+            "This token verifies that the individual is a user of the Rent Website."
+        tokenUriMetadata.image = `https://ipfs.io/ipfs/${imageUploadResponses[imageUploadResponseIndex].IpfsHash}`
         console.log(`Uploading ${tokenUriMetadata.name}...`)
         const metadataUploadResponse = await storeTokenUriMetadata(tokenUriMetadata)
-        tokenUris.push(`ipfs://${metadataUploadResponse.IpfsHash}`)
+        tokenUris.push(`https://ipfs.io/ipfs/${metadataUploadResponse.IpfsHash}`)
     }
-    console.log("Token URIs uploaded! They are:")
+    console.log("Token URI uploaded! It is :")
     console.log(tokenUris)
     return tokenUris
 }
