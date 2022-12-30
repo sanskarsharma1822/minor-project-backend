@@ -226,6 +226,7 @@ contract Property is ERC721URIStorage {
 
 contract PropertyFactory {
     Property[] private s_totalProperties;
+    mapping(address => Property[]) private s_ownerToProperties;
 
     function listProperty(
         string memory _propertyData,
@@ -239,6 +240,7 @@ contract PropertyFactory {
             msg.sender
         );
         s_totalProperties.push(_newPropertyAddress);
+        s_ownerToProperties[msg.sender].push(_newPropertyAddress);
     }
 
     //Getter Functions
@@ -249,6 +251,19 @@ contract PropertyFactory {
 
     function getNoOfProperties() public view returns (uint256) {
         return s_totalProperties.length;
+    }
+
+    function getOwnedProperties(
+        address _address,
+        uint256 _index
+    ) public view returns (Property) {
+        return s_ownerToProperties[_address][_index];
+    }
+
+    function getNoOfPropertiesOwned(
+        address _address
+    ) public view returns (uint256) {
+        return (s_ownerToProperties[_address]).length;
     }
 }
 

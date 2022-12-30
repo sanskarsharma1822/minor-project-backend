@@ -14,14 +14,12 @@ const metadataTemplate = {
     name: "",
     description: "",
     image: "",
-    attributes: [
-        {
-            reputation: 100,
-            dealTokens: [],
-            propertiesOwned: [],
-            currentlyTenant: false,
-        },
-    ],
+    attributes: {
+        reputation: 100,
+        dealTokens: [],
+        propertiesOwned: [],
+        currentlyTenant: false,
+    },
 }
 
 // array of property addresses owned
