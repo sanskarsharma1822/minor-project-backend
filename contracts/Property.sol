@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 error Property__OnlyLandlordAllowed();
 error Property__OnlyCurrentTenantAllowed();
 error Property__NotVerifiedByLandlord();
-error Property__TenantAlreadyOccupied();
 error Property__NotEnoughSecurityPaid();
 error Property__NotEnoughRentPaid();
 error Property__NoRentAvailableToWithdraw();
@@ -15,27 +14,48 @@ error Property__TransactionFailed();
 error Property__NotAuthorized();
 error Property__OnRent();
 error Property__TransferNotAllowed();
+error Property__OwnerCannotAddReview();
+error Property__AgreementNotEnded();
+error Property__RentALreadyPaid();
+error Property__NotEnoughTimeToGiveWarning();
 
 contract Property is ERC721URIStorage {
     //type declarations
 
     //state variables
 
-    uint256 private immutable i_propertyRent;
-    uint256 private immutable i_propertySecurity;
+    uint256 private s_propertyRent;
+    uint256 private s_propertySecurity;
     address private immutable i_owner;
 
     string private s_propertyData;
-    bool private s_verifiedByLandlord = false;
-    bool private s_verifiedByTenant = false;
+    address private s_verifiedByLandlord;
 
     uint256 private s_dealTokenCounter = 0;
+    uint256 private s_dueDate;
+    uint256 private s_endDate;
+    uint256 private s_totalRentToBePaid;
 
     mapping(address => uint256) private s_addressToDealToken;
-    address[] private s_listOfTenants;
     address private s_currentTenant;
+    string[] private s_reviews;
+    // address[] private s_interestedTenants;
+
+    uint256 private constant ONE_MONTH_THIRTY_DAYS = 2592000;
 
     //events
+
+    event TenantAdded(
+        address indexed _tenantAddress,
+        uint256 indexed _dealTokenId
+    );
+    event RentPaid(uint256 indexed _rentToBePaid, uint256 indexed _dueDate);
+    event TenureEnded(
+        address indexed _lastTenant,
+        uint256 indexed _lastDealToken
+    );
+    event AppliedInterested(address indexed _interestedTenantAddress);
+    event ReviewAdded(address indexed _tenantAddress, string indexed _review);
 
     //modifiers
 
@@ -63,10 +83,11 @@ contract Property is ERC721URIStorage {
         address _owner
     ) ERC721("DealToken", "DTN") {
         s_propertyData = _propertyData;
-        i_propertyRent = _propertyRent * 1e18;
-        i_propertySecurity = _propertySecurity * 1e18;
+        s_propertyRent = _propertyRent * 1e18;
+        s_propertySecurity = _propertySecurity * 1e18;
         i_owner = _owner;
         s_currentTenant = _owner;
+        s_verifiedByLandlord = _owner;
     }
 
     //external
@@ -80,67 +101,99 @@ contract Property is ERC721URIStorage {
     // should contain amount paid by dates with status
     //is verified by owner correct
 
+    //dealtoken has a reputation, that can be affected if rent is not paid on time //////////////
+
+    //start date and end date in dealtoken
+    //due date, duration and end date in contract
+    //use propertyfactory money to update dealtoken
+    // add available or not available status in property contract
+
     function addTenant(
-        string memory _newTokenURI
-    ) public payable notOnRent returns (bool) {
-        if (!s_verifiedByLandlord) {
+        string calldata _newTokenURI,
+        uint256 _dueDate,
+        uint256 _endDate,
+        uint256 _duration
+    ) public payable notOnRent {
+        if (s_verifiedByLandlord != msg.sender) {
             revert Property__NotVerifiedByLandlord();
         }
-        if (msg.value < i_propertySecurity) {
+        if (msg.value < s_propertySecurity) {
             revert Property__NotEnoughSecurityPaid();
         }
-        s_verifiedByLandlord = false;
+        s_verifiedByLandlord = i_owner;
         s_dealTokenCounter += 1;
+
         s_addressToDealToken[msg.sender] = s_dealTokenCounter;
-        s_listOfTenants.push(msg.sender);
         s_currentTenant = msg.sender;
+
+        s_dueDate = _dueDate;
+        s_endDate = _endDate;
+        s_totalRentToBePaid = s_propertyRent * _duration;
+
         _safeMint(msg.sender, s_dealTokenCounter);
         _setTokenURI(s_dealTokenCounter, _newTokenURI);
-        return true;
+        emit TenantAdded(msg.sender, s_dealTokenCounter);
     }
 
     function payRent() public payable onlyCurrentTenant {
         //absolute value of rent
-        if (msg.value < i_propertyRent) {
+        if (msg.value != s_propertyRent) {
             revert Property__NotEnoughRentPaid();
         }
+        if (s_totalRentToBePaid == 0) {
+            revert Property__RentALreadyPaid();
+        }
+        s_totalRentToBePaid -= s_propertyRent;
+        s_dueDate += ONE_MONTH_THIRTY_DAYS;
+
+        emit RentPaid(s_totalRentToBePaid, s_dueDate);
     }
 
     function withdrawMonthRent() public onlyLandlord {
-        if (address(this).balance < i_propertyRent + i_propertySecurity) {
+        if (address(this).balance < s_propertyRent + s_propertySecurity) {
             revert Property__NoRentAvailableToWithdraw();
         }
-        (bool success, ) = payable(msg.sender).call{value: i_propertyRent}("");
+        (bool success, ) = payable(msg.sender).call{value: s_propertyRent}("");
         if (!success) {
             revert Property__TransactionFailed();
         }
     }
 
-    function endTenantTime() public returns (bool) {
+    function endTenantTime() public {
         // can be closed anytime by current tenant
-        if (msg.sender != s_currentTenant && msg.sender != i_owner) {
+        if (msg.sender != s_currentTenant || msg.sender != i_owner) {
             //check better way
             revert Property__NotAuthorized();
+        }
+        if (block.timestamp <= s_endDate) {
+            revert Property__AgreementNotEnded();
         }
         address temp_currentTenant = s_currentTenant;
         s_currentTenant = i_owner;
         (bool success, ) = payable(temp_currentTenant).call{
-            value: i_propertySecurity
+            value: s_propertySecurity
         }("");
         if (!success) {
             revert Property__TransactionFailed();
         }
-        return true; // change user entryToken
+        emit TenureEnded(temp_currentTenant, s_dealTokenCounter);
     }
 
-    function giveWarning(string memory _newDealTokenURI) public onlyLandlord {
+    function giveWarning(string calldata _newDealTokenURI) public onlyLandlord {
+        if (block.timestamp < s_dueDate) {
+            revert Property__NotEnoughTimeToGiveWarning();
+        }
         _setTokenURI(s_dealTokenCounter, _newDealTokenURI);
     }
 
     function giveReviewToProperty(
-        string memory _newPropertyData
+        string calldata _newReview
     ) public onlyCurrentTenant {
-        s_propertyData = _newPropertyData;
+        if (msg.sender == i_owner) {
+            revert Property__OwnerCannotAddReview();
+        }
+        s_reviews.push(_newReview);
+        emit ReviewAdded(msg.sender, _newReview);
     }
 
     function safeTransferFrom(
@@ -168,8 +221,29 @@ contract Property is ERC721URIStorage {
         revert Property__TransferNotAllowed();
     }
 
-    function verifiedByLandlord() public onlyLandlord {
-        s_verifiedByLandlord = true;
+    //this will use tenant's money to apply interested, which is not good ux
+    function applyInterested() public notOnRent {
+        // s_interestedTenants.push(msg.sender);
+        emit AppliedInterested(msg.sender);
+    }
+
+    function verifiedByLandlord(
+        address _proposedTenantAddress
+    ) public onlyLandlord {
+        s_verifiedByLandlord = _proposedTenantAddress;
+        // s_interestedTenants = new address[](0);
+    }
+
+    function updateRent(uint256 _newRent) public onlyLandlord {
+        s_propertyRent = _newRent;
+    }
+
+    function updateSecurity(uint256 _newSecurity) public onlyLandlord {
+        s_propertySecurity = _newSecurity;
+    }
+
+    function updatePropertyData(string calldata _newURI) public onlyLandlord {
+        s_propertyData = _newURI;
     }
 
     //internal
@@ -200,11 +274,11 @@ contract Property is ERC721URIStorage {
     //Getter functions
 
     function getRent() public view returns (uint256) {
-        return i_propertyRent;
+        return s_propertyRent;
     }
 
     function getSecurity() public view returns (uint256) {
-        return i_propertySecurity;
+        return s_propertySecurity;
     }
 
     function getLandlord() public view returns (address) {
@@ -215,21 +289,59 @@ contract Property is ERC721URIStorage {
         return s_propertyData;
     }
 
+    function getAddressVerifiedByOwner() public view returns (address) {
+        return s_verifiedByLandlord;
+    }
+
+    function getDueDate() public view returns (uint256) {
+        return s_dueDate;
+    }
+
+    function getEndDate() public view returns (uint256) {
+        return s_endDate;
+    }
+
+    function getTotalRentLeftToBePaid() public view returns (uint256) {
+        return s_totalRentToBePaid;
+    }
+
+    function getDealToken(address _address) public view returns (uint256) {
+        return s_addressToDealToken[_address];
+    }
+
     function getCurrentTenant() public view returns (address) {
         return s_currentTenant;
     }
 
-    function getTenant(uint256 _index) public view returns (address) {
-        return s_listOfTenants[_index];
+    function getNoOfReviews() public view returns (uint256) {
+        return s_reviews.length;
     }
+
+    function getReview(uint256 _index) public view returns (string memory) {
+        return s_reviews[_index];
+    }
+
+    // function getNoOfInterestedTenants() public view returns (uint256){
+    //     return s_interestedTenants.length;
+    // }
+
+    // function getInterestedTenant(uint256 _index) public view returns(address){
+    //     return s_interestedTenants[_index];
+    // }
 }
 
 contract PropertyFactory {
-    Property[] private s_totalProperties;
-    mapping(address => Property[]) private s_ownerToProperties;
+    // address[] private s_totalProperties;
+    // mapping(address => address[]) public s_ownerToProperties;
+
+    event PropertyListed(
+        address indexed _ownerAddress,
+        Property indexed _propertyAddress,
+        string indexed _propertyData
+    );
 
     function listProperty(
-        string memory _propertyData,
+        string calldata _propertyData,
         uint256 _propertyRent,
         uint256 _propertySecurity
     ) public {
@@ -239,32 +351,26 @@ contract PropertyFactory {
             _propertySecurity,
             msg.sender
         );
-        s_totalProperties.push(_newPropertyAddress);
-        s_ownerToProperties[msg.sender].push(_newPropertyAddress);
+        emit PropertyListed(msg.sender, _newPropertyAddress, _propertyData);
     }
 
     //Getter Functions
 
-    function getPropertyAddress(uint256 _index) public view returns (Property) {
-        return (s_totalProperties[_index]);
-    }
+    // function getPropertyAddress(uint256 _index) public view returns (Property) {
+    //     return (s_totalProperties[_index]);
+    // }
 
-    function getNoOfProperties() public view returns (uint256) {
-        return s_totalProperties.length;
-    }
+    // // function getOwnedProperties (address _address, uint256 _index) public view returns(Property){
+    // //     return s_ownerToProperties[_address][_index];
+    // // }
 
-    function getOwnedProperties(
-        address _address,
-        uint256 _index
-    ) public view returns (Property) {
-        return s_ownerToProperties[_address][_index];
-    }
+    // function getNoOfProperties() public view returns (uint256) {
+    //     return s_totalProperties.length;
+    // }
 
-    function getNoOfPropertiesOwned(
-        address _address
-    ) public view returns (uint256) {
-        return (s_ownerToProperties[_address]).length;
-    }
+    // function getNoOfPropertiesOwned(address _address) public view returns(uint256){
+    //     return (s_ownerToProperties[_address]).length;
+    // }
 }
 
 //with new modifiers : 25552

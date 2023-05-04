@@ -29,7 +29,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deployer } = await getNamedAccounts()
     const chainId = network.config.chainId
 
-    let initialTokenURI
+    // let initialTokenURI = ["https://ipfs.io/ipfs/QmSsYRx3LpDAb1GZQm7zZ1AuHZjfbPkD6J7s9r41xu1mf8"]
     if (true) {
         initialTokenURI = await handleTokenUris()
     }

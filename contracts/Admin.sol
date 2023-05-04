@@ -20,6 +20,11 @@ contract Admin is ERC721URIStorage {
 
     //events
 
+    event Admin__UserRegistered(
+        address indexed _userAddress,
+        uint256 indexed _entryTokenId
+    );
+
     //modifiers
     modifier notRegistered() {
         _notRegistered();
@@ -43,10 +48,11 @@ contract Admin is ERC721URIStorage {
         s_addressToEntryToken[msg.sender] = s_entryTokenCounter;
         _safeMint(msg.sender, s_entryTokenCounter);
         _setTokenURI(s_entryTokenCounter, i_initialTokenURI);
+        emit Admin__UserRegistered(msg.sender, s_entryTokenCounter);
     }
 
     function updateTokenURI(
-        string memory _newTokenURI,
+        string calldata _newTokenURI,
         uint256 _entryTokenId
     ) public {
         if (msg.sender != i_owner) {
