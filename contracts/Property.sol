@@ -18,6 +18,7 @@ error Property__OwnerCannotAddReview();
 error Property__AgreementNotEnded();
 error Property__RentALreadyPaid();
 error Property__NotEnoughTimeToGiveWarning();
+error Property__RentLeftToBePaid();
 
 contract Property is ERC721URIStorage {
     //type declarations
@@ -168,6 +169,9 @@ contract Property is ERC721URIStorage {
         if (block.timestamp <= s_endDate) {
             revert Property__AgreementNotEnded();
         }
+        if (s_totalRentToBePaid > 0) {
+            revert Property__RentLeftToBePaid();
+        }
         address temp_currentTenant = s_currentTenant;
         s_currentTenant = i_owner;
         (bool success, ) = payable(temp_currentTenant).call{
@@ -180,9 +184,9 @@ contract Property is ERC721URIStorage {
     }
 
     function giveWarning(string calldata _newDealTokenURI) public onlyLandlord {
-        if (block.timestamp < s_dueDate) {
-            revert Property__NotEnoughTimeToGiveWarning();
-        }
+        // if (block.timestamp < s_dueDate) {
+        //     revert Property__NotEnoughTimeToGiveWarning();
+        // }
         _setTokenURI(s_dealTokenCounter, _newDealTokenURI);
     }
 
@@ -244,6 +248,16 @@ contract Property is ERC721URIStorage {
 
     function updatePropertyData(string calldata _newURI) public onlyLandlord {
         s_propertyData = _newURI;
+    }
+
+    function updateTokenURI(
+        string calldata _newTokenURI,
+        uint256 _dealTokenId
+    ) public {
+        if (msg.sender != i_owner) {
+            revert Property__NotAuthorized();
+        }
+        _setTokenURI(_dealTokenId, _newTokenURI);
     }
 
     //internal
@@ -319,6 +333,10 @@ contract Property is ERC721URIStorage {
 
     function getReview(uint256 _index) public view returns (string memory) {
         return s_reviews[_index];
+    }
+
+    function getBalance() public view returns (uint256) {
+        return address(this).balance;
     }
 
     // function getNoOfInterestedTenants() public view returns (uint256){
